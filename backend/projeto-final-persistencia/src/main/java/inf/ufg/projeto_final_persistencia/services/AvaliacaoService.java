@@ -27,9 +27,10 @@ public class AvaliacaoService {
     private UsuarioRepository usuarioRepo;
 
     @Transactional
-    public AvaliacaoDTO createOrUpdate(CreateAvaliacaoDTO dto) {
+    public AvaliacaoDTO createOrUpdate(CreateAvaliacaoDTO dto,  String usernameLogado) {
         PontoTuristico ponto = pontoRepo.findById(dto.pontoId()).orElseThrow(() -> new IllegalArgumentException("Ponto não encontrado"));
-        Usuario usuario = usuarioRepo.findById(dto.usuarioId()).orElseThrow(() -> new IllegalArgumentException("Usuario não encontrado"));
+        Usuario usuario = usuarioRepo.findByLogin(usernameLogado)
+            .orElseThrow();
 
         return avaliacaoRepo.findByPontoAndUsuario(ponto, usuario)
                 .map(existing -> {

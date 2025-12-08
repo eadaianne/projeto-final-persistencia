@@ -7,8 +7,11 @@ import inf.ufg.projeto_final_persistencia.entities.PontoTuristico;
 import inf.ufg.projeto_final_persistencia.entities.Usuario;
 import inf.ufg.projeto_final_persistencia.repositories.PontoTuristicoRepository;
 import inf.ufg.projeto_final_persistencia.repositories.UsuarioRepository;
+import jakarta.persistence.EntityNotFoundException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,7 +51,11 @@ public class PontoService {
     }
 
     @Transactional
-    public PontoDTO create(CreatePontoDTO dto) {
+    public PontoDTO create(CreatePontoDTO dto, String usernameLogado) {
+
+        Usuario criador = usuarioRepo.findByLogin(usernameLogado)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário inválido"));
+
         PontoTuristico p = new PontoTuristico();
         p.setNome(dto.nome());
         p.setDescricao(dto.descricao());
@@ -58,49 +65,73 @@ public class PontoService {
         p.setLatitude(dto.latitude());
         p.setLongitude(dto.longitude());
         p.setEndereco(dto.endereco());
+        p.setCriadoPor(criador);
 
-        if (dto.criadoPorId() != null) {
-            Usuario u = usuarioRepo.findById(dto.criadoPorId()).orElse(null);
-            p.setCriadoPor(u);
+        return toDto(pontoRepo.save(p));
+    }
+
+    @Transactional
+    public PontoDTO update(Long id, UpdatePontoDTO dto, String usernameLogado) {
+
+        PontoTuristico p = pontoRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Ponto não encontrado"));
+
+        Usuario user = usuarioRepo.findByLogin(usernameLogado)
+                .orElseThrow();
+
+        boolean isOwner = p.getCriadoPor() != null && p.getCriadoPor().getLogin().equals(user.getLogin());
+        boolean isAdmin = user.getRole().equals("ADMIN");
+
+        if (!isOwner && !isAdmin) {
+            throw new AccessDeniedException("Você não tem permissão para editar este ponto.");
         }
+
+        if (dto.descricao() != null)
+            p.setDescricao(dto.descricao());
+        if (dto.cidade() != null)
+            p.setCidade(dto.cidade());
+        if (dto.estado() != null)
+            p.setEstado(dto.estado());
+        if (dto.pais() != null)
+            p.setPais(dto.pais());
+        if (dto.latitude() != null)
+            p.setLatitude(dto.latitude());
+        if (dto.longitude() != null)
+            p.setLongitude(dto.longitude());
+        if (dto.endereco() != null)
+            p.setEndereco(dto.endereco());
+
         PontoTuristico saved = pontoRepo.save(p);
         return toDto(saved);
     }
 
     @Transactional
-    public Optional<PontoDTO> update(Long id, UpdatePontoDTO dto) {
-        return pontoRepo.findById(id).map(p -> {
-            if (dto.nome() != null) p.setNome(dto.nome());
-            if (dto.descricao() != null) p.setDescricao(dto.descricao());
-            if (dto.cidade() != null) p.setCidade(dto.cidade());
-            if (dto.estado() != null) p.setEstado(dto.estado());
-            if (dto.pais() != null) p.setPais(dto.pais());
-            if (dto.latitude() != null) p.setLatitude(dto.latitude());
-            if (dto.longitude() != null) p.setLongitude(dto.longitude());
-            if (dto.endereco() != null) p.setEndereco(dto.endereco());
-            return toDto(pontoRepo.save(p));
-        });
-    }
+    public void delete(Long id, String usernameLogado) {
+        PontoTuristico p = pontoRepo.findById(id).orElseThrow();
+        Usuario user = usuarioRepo.findByLogin(usernameLogado).orElseThrow();
 
-    @Transactional
-    public void delete(Long id) {
-        pontoRepo.deleteById(id);
+        boolean isOwner = p.getCriadoPor().getLogin().equals(user.getLogin());
+        boolean isAdmin = "ADMIN".equals(user.getRole());
+
+        if (!isOwner && !isAdmin)
+            throw new AccessDeniedException("Você não pode excluir este ponto");
+
+        pontoRepo.delete(p);
     }
 
     private PontoDTO toDto(PontoTuristico p) {
         return new PontoDTO(
-            p.getId(),
-            p.getNome(),
-            p.getDescricao(),
-            p.getCidade(),
-            p.getEstado(),
-            p.getPais(),
-            p.getLatitude(),
-            p.getLongitude(),
-            p.getEndereco(),
-            p.getNotaMedia(),
-            p.getQtdAvaliacoes(),
-            p.getCreatedAt()
-        );
+                p.getId(),
+                p.getNome(),
+                p.getDescricao(),
+                p.getCidade(),
+                p.getEstado(),
+                p.getPais(),
+                p.getLatitude(),
+                p.getLongitude(),
+                p.getEndereco(),
+                p.getNotaMedia(),
+                p.getQtdAvaliacoes(),
+                p.getCreatedAt());
     }
 }
