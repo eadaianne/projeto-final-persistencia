@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 public interface PontoTuristicoRepository extends JpaRepository<PontoTuristico, Long> {
 
@@ -18,6 +19,8 @@ public interface PontoTuristicoRepository extends JpaRepository<PontoTuristico, 
     Page<PontoTuristico> findByCidadeIgnoreCaseAndNotaMediaGreaterThanEqual(String cidade, BigDecimal nota, Pageable pageable);
 
     Page<PontoTuristico> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
+
+    Optional<PontoTuristico> findByNomeAndCidadeIgnoreCase(String nome, String cidade);
 
     @Query("""
       SELECT p FROM PontoTuristico p
