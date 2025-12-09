@@ -30,7 +30,7 @@ public class PontoController {
         return service.list(cidade, notaMin, nome, page, size);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id: \\d+}")
     public ResponseEntity<PontoDTO> get(@PathVariable Long id) {
         return service.getById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
