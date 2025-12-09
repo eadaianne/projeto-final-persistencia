@@ -1,0 +1,27 @@
+/* Theme variables and color system */
+:root {
+  --color-primary: #0066cc;
+  --color-primary-600: #0052a3;
+  --color-secondary: #ff5722;
+  --color-accent: #00bcd4;
+  --bg: #ffffff;
+  --surface: #f3f4f6;
+  --muted: #6b7280;
+  --text: #111827;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 8px;
+}
+
+/* Light and dark theme can be toggled by adding .theme-dark to the body */
+body.theme-dark {
+  --bg: #0b1220;
+  --surface: #0f1724;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+}
+
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.5rem 1rem; border-radius:var(--radius); background:var(--color-primary); color:#fff; border:none; cursor:pointer; }
+.btn.secondary { background: var(--color-secondary); }
+.card { background: var(--bg); border-radius: var(--radius); box-shadow: 0 1px 3px rgba(16,24,40,0.04); padding: 1rem; }
