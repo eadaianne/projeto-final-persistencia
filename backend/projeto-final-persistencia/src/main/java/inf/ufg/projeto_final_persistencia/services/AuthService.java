@@ -1,13 +1,17 @@
 package inf.ufg.projeto_final_persistencia.services;
 
-import inf.ufg.projeto_final_persistencia.config.JwtUtil;
-import inf.ufg.projeto_final_persistencia.dtos.AuthDTOs.*;
-import inf.ufg.projeto_final_persistencia.entities.Usuario;
-import inf.ufg.projeto_final_persistencia.repositories.UsuarioRepository;
-import org.springframework.security.authentication.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import inf.ufg.projeto_final_persistencia.config.JwtUtil;
+import inf.ufg.projeto_final_persistencia.dtos.AuthDTOs.AuthRequest;
+import inf.ufg.projeto_final_persistencia.dtos.AuthDTOs.RegisterRequest;
+import inf.ufg.projeto_final_persistencia.entities.Usuario;
+import inf.ufg.projeto_final_persistencia.repositories.UsuarioRepository;
 
 @Service
 public class AuthService {
@@ -17,6 +21,10 @@ public class AuthService {
     private final AuthenticationManager authManager;
     private final JwtUtil jwtUtil;
 
+    public Usuario getUsuarioByLogin(String login) {
+        return usuarioRepo.findByLogin(login).orElse(null);
+    }
+
     public AuthService(UsuarioRepository usuarioRepo, PasswordEncoder passwordEncoder, AuthenticationManager authManager, JwtUtil jwtUtil) {
         this.usuarioRepo = usuarioRepo;
         this.passwordEncoder = passwordEncoder;
@@ -25,8 +33,12 @@ public class AuthService {
     }
 
     public void register(RegisterRequest req) {
-        if (usuarioRepo.findByLogin(req.login()).isPresent()) throw new IllegalArgumentException("Login já existe");
-        if (usuarioRepo.findByEmail(req.email()).isPresent()) throw new IllegalArgumentException("Email já existe");
+        if (usuarioRepo.findByLogin(req.login()).isPresent()) {
+            throw new IllegalArgumentException("Login já existe");
+        }
+        if (usuarioRepo.findByEmail(req.email()).isPresent()) {
+            throw new IllegalArgumentException("Email já existe");
+        }
 
         Usuario u = Usuario.builder()
                 .login(req.login())
@@ -34,13 +46,28 @@ public class AuthService {
                 .senhaHash(passwordEncoder.encode(req.password()))
                 .role("USER")
                 .build();
+
         usuarioRepo.save(u);
     }
 
     public String login(AuthRequest req) {
-        Authentication auth = authManager.authenticate(new UsernamePasswordAuthenticationToken(req.loginOrEmail(), req.password()));
-        // se chegar aqui, está autenticado
-        String username = auth.getName(); // this will be the login
-        return jwtUtil.generateToken(username);
+        Authentication auth = authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(req.loginOrEmail(), req.password())
+        );
+
+        String username = auth.getName();
+        String role = auth.getName();
+        return jwtUtil.generateToken(username, role);
+    }
+
+    /**
+     * NOVO MÉTODO PARA /auth/me
+     */
+    public Usuario getAuthenticatedUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String login = auth.getName();
+
+        return usuarioRepo.findByLogin(login)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
     }
 }
