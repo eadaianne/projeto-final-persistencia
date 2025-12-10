@@ -1,56 +1,59 @@
-import React, { createContext, useEffect, useState } from 'react';
-import authService from '../services/authService';
-import { me } from '../api/authApi';
+import React, { createContext, useEffect, useState } from "react";
+import api from "../api/api";
+import { useNavigate } from "react-router-dom";
 
-export const AuthContext = createContext({
-	user: null,
-	loading: true,
-	login: async () => {},
-	logout: () => {},
-});
+export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-	const [user, setUser] = useState(null);
-	const [loading, setLoading] = useState(true);
+export function AuthProvider({ children }) {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem("user")) || null);
+  const [loading, setLoading] = useState(true);
 
-	useEffect(() => {
-		const initialize = async () => {
-			try {
-				authService.setAuthorizationHeader();
-				const data = await me();
-				setUser(data?.user || null);
-			} catch (err) {
-				setUser(null);
-			} finally {
-				setLoading(false);
-			}
-		};
-		initialize();
-	}, []);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      const stored = localStorage.getItem("user");
+      if (stored) setUser(JSON.parse(stored));
+    }
+    setLoading(false);
+  }, []);
 
-	const login = async (credentials) => {
-		const data = await authService.login(credentials);
-		// after login, try to fetch user
-		try {
-			const meData = await me();
-			setUser(meData?.user || null);
-		} catch (err) {
-			// ignore
-		}
-		return data;
-	};
+  const login = async (loginOrEmail, password) => {
+    const res = await api.post("/auth/login", { loginOrEmail, password });
 
-	const logout = () => {
-		authService.logout();
-		setUser(null);
-	};
+    const token = res.data.token || res.data.accessToken || res.data.jwt;
+    let usuario = res.data.usuario || res.data.user || null;
 
-	return (
-		<AuthContext.Provider value={{ user, loading, login, logout }}>
-			{children}
-		</AuthContext.Provider>
-	);
-};
+    if (!usuario) {
+      try {
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        const me = await api.get("/auth/me");
+        usuario = me.data;
+      } catch (e) {
+        usuario = { login: loginOrEmail, role: "USER" };
+      }
+    }
 
-export default AuthProvider;
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(usuario));
+    localStorage.setItem("role", usuario.role || "USER");
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    setUser(usuario);
+    navigate("/");
+  };
 
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+    setUser(null);
+    navigate("/login");
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, authenticated: !!user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}

@@ -1,44 +1,36 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/layout/navbar.jsx';
-import Sidebar from './components/layout/Sidebar.jsx';
-import ProtectedRoute from './components/layout/ProtectedRoute';
-import Login from './pages/Login/Login';
-import NotFound from './pages/NotFound';
-import Dashboard from './pages/Dashboard/Dashboard';
-import PontosList from './pages/Pontos/PontosList';
-import PontoCreate from './pages/Pontos/PontoCreate';
-import PontoDetalhes from './pages/Pontos/PontoDetalhes';
-import PontoEdit from './pages/Pontos/PontoEdit';
-import HospedagensList from './pages/Hospedagens/HospedagensList';
-import HospedagemForm from './pages/Hospedagens/HospedagemForm';
-import ComentariosList from './pages/Comentarios/ComentariosList';
 
-const App = () => {
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext.jsx";
+import Navbar from "./components/Navbar.jsx";
+import Home from "./pages/Home.jsx";
+import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
+import PontoDetalhes from "./pages/PontoDetalhes.jsx";
+import CriarPonto from "./pages/CriarPonto.jsx";
+import EditarPonto from "./pages/EditarPonto.jsx";
+import Hospedagens from "./pages/Hospedagens.jsx";
+import Favoritos from "./pages/Favoritos.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+
+console.log('App.jsx carregado')
+
+export default function App() {
 	return (
-		<Router>
-			<div className="app-root">
+		<BrowserRouter>
+			<AuthProvider>
 				<Navbar />
-				<div style={{ display: 'flex', minHeight: 'calc(100vh - 56px)' }}>
-					<Sidebar />
-					<main style={{ flex: 1, padding: '1rem' }}>
-						<Routes>
-							<Route path="/login" element={<Login />} />
-							<Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-							<Route path="/pontos" element={<ProtectedRoute><PontosList /></ProtectedRoute>} />
-							<Route path="/pontos/new" element={<ProtectedRoute><PontoCreate /></ProtectedRoute>} />
-							<Route path="/pontos/:id" element={<ProtectedRoute><PontoDetalhes /></ProtectedRoute>} />
-							<Route path="/pontos/:id/edit" element={<ProtectedRoute><PontoEdit /></ProtectedRoute>} />
-							<Route path="/hospedagens" element={<ProtectedRoute><HospedagensList /></ProtectedRoute>} />
-							<Route path="/hospedagens/new" element={<ProtectedRoute><HospedagemForm /></ProtectedRoute>} />
-							<Route path="/comentarios" element={<ProtectedRoute><ComentariosList /></ProtectedRoute>} />
-							<Route path="*" element={<NotFound />} />
-						</Routes>
-					</main>
-				</div>
-			</div>
-		</Router>
+				<Routes>
+					<Route path="/" element={<Home />} />
+					<Route path="/login" element={<Login />} />
+					<Route path="/register" element={<Register />} />
+					<Route path="/ponto/:id" element={<PontoDetalhes />} />
+					<Route path="/favoritos" element={<ProtectedRoute><Favoritos/></ProtectedRoute>} />
+					<Route path="/criar" element={<ProtectedRoute adminOnly={true}><CriarPonto /></ProtectedRoute>} />
+					<Route path="/editar/:id" element={<ProtectedRoute adminOnly={true}><EditarPonto/></ProtectedRoute>} />
+					<Route path="/hospedagens/:pontoId" element={<Hospedagens/>} />
+				</Routes>
+			</AuthProvider>
+		</BrowserRouter>
 	);
-};
-
-export default App;
+}

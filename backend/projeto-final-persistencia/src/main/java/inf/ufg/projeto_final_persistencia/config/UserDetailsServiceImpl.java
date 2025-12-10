@@ -20,10 +20,23 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
+
+        // busca por login ou por email
         Usuario u = usuarioRepo.findByLogin(usernameOrEmail)
                 .orElseGet(() -> usuarioRepo.findByEmail(usernameOrEmail)
                         .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado")));
-        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + (u.getRole() == null ? "USER" : u.getRole())));
-        return new org.springframework.security.core.userdetails.User(u.getLogin(), u.getSenhaHash(), authorities);
+
+        // garante que a ROLE sempre exista
+        String role = u.getRole() == null ? "USER" : u.getRole();
+
+        List<GrantedAuthority> authorities =
+                List.of(new SimpleGrantedAuthority("ROLE_" + role));
+
+        // retorna o usuário para o Spring Security
+        return new org.springframework.security.core.userdetails.User(
+                u.getLogin(),            // nome de login usado no token
+                u.getSenhaHash(),        // senha já hasheada
+                authorities              // roles
+        );
     }
 }
