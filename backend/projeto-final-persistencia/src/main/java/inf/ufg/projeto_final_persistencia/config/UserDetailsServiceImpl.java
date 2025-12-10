@@ -26,17 +26,24 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .orElseGet(() -> usuarioRepo.findByEmail(usernameOrEmail)
                         .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado")));
 
-        // garante que a ROLE sempre exista
-        String role = u.getRole() == null ? "USER" : u.getRole();
+        // normaliza a role: remove prefixo ROLE_ se já existir, usa USER se nulo
+        String rawRole = u.getRole();
+        if (rawRole == null || rawRole.trim().isEmpty()) {
+            rawRole = "USER";
+        }
+        rawRole = rawRole.trim();
+        if (rawRole.startsWith("ROLE_")) {
+            rawRole = rawRole.substring("ROLE_".length());
+        }
 
-        List<GrantedAuthority> authorities =
-                List.of(new SimpleGrantedAuthority("ROLE_" + role));
+        String roleWithPrefix = "ROLE_" + rawRole; // garante apenas um ROLE_ no começo
 
-        // retorna o usuário para o Spring Security
+        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(roleWithPrefix));
+
         return new org.springframework.security.core.userdetails.User(
-                u.getLogin(),            // nome de login usado no token
-                u.getSenhaHash(),        // senha já hasheada
-                authorities              // roles
+                u.getLogin(),
+                u.getSenhaHash(),
+                authorities
         );
     }
 }
