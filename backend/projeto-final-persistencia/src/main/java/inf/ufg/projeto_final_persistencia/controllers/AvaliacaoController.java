@@ -33,4 +33,14 @@ public class AvaliacaoController {
     public ResponseEntity<List<AvaliacaoDTO>> listByPonto(@PathVariable Long pontoId) {
         return ResponseEntity.ok(service.findByPonto(pontoId));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            Authentication auth) {
+
+        String username = auth.getName();
+        service.delete(id, username);
+        return ResponseEntity.noContent().build();
+    }
 }

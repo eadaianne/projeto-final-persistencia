@@ -6,6 +6,7 @@ import inf.ufg.projeto_final_persistencia.services.HospedagemService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,8 +19,12 @@ public class HospedagemController {
     private HospedagemService service;
 
     @PostMapping
-    public ResponseEntity<HospedagemDTO> create(@Valid @RequestBody CreateHospedagemDTO dto) {
-        return ResponseEntity.status(201).body(service.create(dto));
+    public ResponseEntity<HospedagemDTO> create(
+            @Valid @RequestBody CreateHospedagemDTO dto,
+            Authentication auth) {
+        String username = auth == null ? null : auth.getName();
+        HospedagemDTO created = service.create(dto, username);
+        return ResponseEntity.status(201).body(created);
     }
 
     @GetMapping
@@ -28,8 +33,11 @@ public class HospedagemController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            Authentication auth) {
+        String username = auth == null ? null : auth.getName();
+        service.delete(id, username);
         return ResponseEntity.noContent().build();
     }
 }
